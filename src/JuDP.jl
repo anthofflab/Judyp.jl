@@ -172,7 +172,7 @@ function solve{T<:MathProgBase.SolverInterface.AbstractMathProgSolver}(problem::
         end
 
         if print_level>=2
-            println("Function iteration $it: max coeff change of from last max-step $step1, max value change of last max-step $step2")
+            println("Function iteration $it: max coeff change $step1, max value change $step2")
         end
 
     end
