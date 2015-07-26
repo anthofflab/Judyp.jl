@@ -160,7 +160,8 @@ function solve{T<:MathProgBase.SolverInterface.AbstractMathProgSolver}(problem::
         end
         c[:] = CompEcon.ckronxi(Φ, new_v)
 
-        step1 = norm(c .- c_old,Inf)
+        #step1 = norm(c .- c_old,Inf)
+        step1 = maxabs(c .- c_old)
         step2 = norm(new_v .- old_v,Inf)
 
         if step1<tol  #converged
