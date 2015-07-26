@@ -105,9 +105,7 @@ function solve{T<:MathProgBase.SolverInterface.AbstractMathProgSolver}(problem::
     elapsed_solver = Array(Float64,0)
     for it=1:maxit
         progress = ProgressMeter.Progress(clen, "Iteration $it...")#, "Iteration $it...", 50)
-        if print_level>=2
-            println(it)
-        end
+
         c, c_old = c_old, c
         opt_state.c = c_old
 
@@ -171,6 +169,11 @@ function solve{T<:MathProgBase.SolverInterface.AbstractMathProgSolver}(problem::
             end
             return DynProgSolution(c, q->valuefun(q, opt_state.c, opt_state.value_fun_state), elapsed_solver, it)
         end
+
+        if print_level>=2
+            println("Function iteration $it: max coeff change of from last max-step $step1, max value change of last max-step $step2")
+        end
+
     end
     error("Function iteration with reached the maximum number of iterations")
 end
