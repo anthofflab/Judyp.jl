@@ -1,1 +1,6 @@
 julia 0.3
+ArrayViews
+DualNumbers
+ForwardDiff
+MathProgBase
+ProgressMeter
