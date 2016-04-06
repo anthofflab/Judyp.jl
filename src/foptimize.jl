@@ -1,4 +1,4 @@
-using DualNumbers
+using ForwardDiff
 
 type optimizestate
     n_states::Int64
@@ -10,7 +10,7 @@ type optimizestate
     c::Array{Float64,1}
     value_fun_state::valuefunstate
     temp_new_state_float64::Array{Float64,1}
-    temp_new_state_dual::Array{Dual{Float64},1}
+    temp_new_state_dual::Array{ForwardDiff.GradientNumber{2, Float64, Tuple{Float64, Float64}},1}
 end
 
 function genoptimizestate(problem::DynProgProblem, value_fun_state)
@@ -24,7 +24,7 @@ function genoptimizestate(problem::DynProgProblem, value_fun_state)
         zeros(1), # This could be left uninitialized
         value_fun_state,
         Array(Float64, length(value_fun_state.n_nodes)),
-        Array(Dual{Float64}, length(value_fun_state.n_nodes)))
+        Array(ForwardDiff.GradientNumber{2, Float64, Tuple{Float64, Float64}}, length(value_fun_state.n_nodes)))
     return os
 end
 
@@ -32,7 +32,7 @@ function getrighttemparray(::Type{Float64},state::optimizestate)
     return state.temp_new_state_float64
 end
 
-function getrighttemparray(::Type{Dual{Float64}},state::optimizestate)
+function getrighttemparray(::Type{ForwardDiff.GradientNumber{2, Float64, Tuple{Float64, Float64}}},state::optimizestate)
     return state.temp_new_state_dual
 end
 

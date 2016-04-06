@@ -1,8 +1,8 @@
 using ForwardDiff
 using MathProgBase
-import MathProgBase.MathProgSolverInterface
+using MathProgBase.SolverInterface
 
-type JuDPNLPEvaluator <: MathProgSolverInterface.AbstractNLPEvaluator
+type JuDPNLPEvaluator <: AbstractNLPEvaluator
     f::Function
     grad_f::Function
     g::Function
@@ -21,9 +21,9 @@ type JuDPNLPEvaluator <: MathProgSolverInterface.AbstractNLPEvaluator
         g_len = length(g_linear)
         new(
             f,
-            forwarddiff_gradient!(f, Float64, fadtype=:dual, n=x_len),
+            ForwardDiff.gradient(f, mutates=true), #Float64, fadtype=:dual, n=x_len),
             g,
-            forwarddiff_jacobian!(g, Float64, fadtype=:dual, n=x_len, m=g_len),
+            ForwardDiff.jacobian(g, mutates=true, output_length=g_len), #Float64, fadtype=:dual, n=x_len, m=g_len),
             x_len,
             g_len,
             g_linear,
@@ -32,7 +32,7 @@ type JuDPNLPEvaluator <: MathProgSolverInterface.AbstractNLPEvaluator
     end
 end
 
-function MathProgSolverInterface.initialize(d::JuDPNLPEvaluator, requested_features::Vector{Symbol})
+function MathProgBase.SolverInterface.initialize(d::JuDPNLPEvaluator, requested_features::Vector{Symbol})
     for feat in requested_features
         if !(feat in [:Grad, :Jac, :Hess])
             error("Unsupported feature $feat")
@@ -40,38 +40,38 @@ function MathProgSolverInterface.initialize(d::JuDPNLPEvaluator, requested_featu
     end
 end
 
-function MathProgSolverInterface.features_available(d::JuDPNLPEvaluator)
+function MathProgBase.SolverInterface.features_available(d::JuDPNLPEvaluator)
     return [:Grad, :Jac, :Hess]
 end
 
-function MathProgSolverInterface.eval_f(d::JuDPNLPEvaluator, x)
+function MathProgBase.SolverInterface.eval_f(d::JuDPNLPEvaluator, x)
     d.debug_trace && print("f($x) ->")
     y = d.f(x)
     d.debug_trace && println(" $y")
     return y
 end
 
-function MathProgSolverInterface.eval_g(d::JuDPNLPEvaluator, g, x)
+function MathProgBase.SolverInterface.eval_g(d::JuDPNLPEvaluator, g, x)
     d.debug_trace && print("g($x) ->")
     d.g(x, g)
     d.debug_trace && println(" $g")
 end
 
-function MathProgSolverInterface.eval_grad_f(d::JuDPNLPEvaluator, grad_f, x)
+function MathProgBase.SolverInterface.eval_grad_f(d::JuDPNLPEvaluator, grad_f, x)
     d.debug_trace && print("f'($x) ->")
     try
-        d.grad_f(x, grad_f)
+        d.grad_f(grad_f, x)
     catch e
         if isa(e, DomainError)
             grad_f[:] = NaN
         else
-            retrhow()
+            rethrow()
         end
     end
     d.debug_trace && println(" $grad_f")
 end
 
-function MathProgSolverInterface.jac_structure(d::JuDPNLPEvaluator)
+function MathProgBase.SolverInterface.jac_structure(d::JuDPNLPEvaluator)
     rows = Array(Int,0)
     cols = Array(Int,0)
 
@@ -85,7 +85,7 @@ function MathProgSolverInterface.jac_structure(d::JuDPNLPEvaluator)
     return rows, cols
 end
 
-function MathProgSolverInterface.hesslag_structure(d::JuDPNLPEvaluator)
+function MathProgBase.SolverInterface.hesslag_structure(d::JuDPNLPEvaluator)
     rows = Array(Int,0)
     cols = Array(Int,0)
 
@@ -99,10 +99,10 @@ function MathProgSolverInterface.hesslag_structure(d::JuDPNLPEvaluator)
     return rows, cols
 end
 
-function MathProgSolverInterface.eval_jac_g(d::JuDPNLPEvaluator, J, x)
+function MathProgBase.SolverInterface.eval_jac_g(d::JuDPNLPEvaluator, J, x)
     d.debug_trace && print("g'($x) ->")
     try
-        d.jac_g(x, d.temp_jac_g_output)
+        d.jac_g(d.temp_jac_g_output, x)
     catch e
         if isa(e, DomainError)
             d.temp_jac_g_output[:,:] = NaN
@@ -120,18 +120,18 @@ function MathProgSolverInterface.eval_jac_g(d::JuDPNLPEvaluator, J, x)
     end
 end
 
-function MathProgSolverInterface.eval_hesslag(d::JuDPNLPEvaluator, H, x, σ, μ)
+function MathProgBase.SolverInterface.eval_hesslag(d::JuDPNLPEvaluator, H, x, σ, μ)
     error("Not yet implemented")
 end
 
-function MathProgSolverInterface.isobjlinear(d::JuDPNLPEvaluator)
+function MathProgBase.SolverInterface.isobjlinear(d::JuDPNLPEvaluator)
     return false
 end
 
-function MathProgSolverInterface.isobjquadratic(d::JuDPNLPEvaluator)
+function MathProgBase.SolverInterface.isobjquadratic(d::JuDPNLPEvaluator)
     return false
 end
 
-function MathProgSolverInterface.isconstrlinear(d::JuDPNLPEvaluator, i::Int)
+function MathProgBase.SolverInterface.isconstrlinear(d::JuDPNLPEvaluator, i::Int)
     return d.g_linear[i]
 end

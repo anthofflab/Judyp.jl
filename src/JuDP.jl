@@ -76,7 +76,7 @@ function solve{T<:MathProgBase.SolverInterface.AbstractMathProgSolver}(problem::
       return ret
     end
 
-    function constraint_f_with_closure(x, g)
+    function constraint_f_with_closure(g, x)
         constraint_f(x, g, opt_state)
     end
 
@@ -89,10 +89,10 @@ function solve{T<:MathProgBase.SolverInterface.AbstractMathProgSolver}(problem::
         )
 
     # MathProg stuff
-    mathprog_problems = [MathProgSolverInterface.model(s) for s in solvers]
+    mathprog_problems = [NonlinearModel(s) for s in solvers]
 
     for mp in mathprog_problems
-        MathProgSolverInterface.loadnonlinearproblem!(
+        loadproblem!(
             mp,
             length(problem.x_min),
             length(problem.g_min),
@@ -124,17 +124,17 @@ function solve{T<:MathProgBase.SolverInterface.AbstractMathProgSolver}(problem::
 
             solution_found = false
             for mp in mathprog_problems
-                MathProgSolverInterface.setwarmstart!(mp,x_initial_value)
-                elapsed = @elapsed MathProgSolverInterface.optimize!(mp)
+                setwarmstart!(mp,x_initial_value)
+                elapsed = @elapsed optimize!(mp)
                 push!(elapsed_solver, elapsed)
-                stat = MathProgSolverInterface.status(mp)
+                stat = status(mp)
 
                 if stat==:Optimal || stat==:FeasibleApproximate
                     solution_found = true
 
-                    x_init[i, :] = MathProgSolverInterface.getsolution(mp)
+                    x_init[i, :] = getsolution(mp)
 
-                    new_v[i] = - MathProgSolverInterface.getobjval(mp)
+                    new_v[i] = - getobjval(mp)
 
                     break
                 end
