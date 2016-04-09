@@ -53,7 +53,7 @@ end
 
 function MathProgBase.SolverInterface.eval_g(d::JuDPNLPEvaluator, g, x)
     d.debug_trace && print("g($x) ->")
-    d.g(x, g)
+    d.g(g, x)
     d.debug_trace && println(" $g")
 end
 
