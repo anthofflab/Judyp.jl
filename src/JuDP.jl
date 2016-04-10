@@ -59,7 +59,6 @@ function solve{T<:MathProgBase.SolverInterface.AbstractMathProgSolver}(problem::
     old_v = zeros(length(c))
 
     s_nodes = [cheb_nodes(problem.num_node[i], problem.s_min[i], problem.s_max[i]) for i=1:length(problem.num_node)]
-    curr_node = Array(Int64,length(problem.num_node))
 
     value_fun_state = genvaluefunstate(problem.num_node,problem.s_min,problem.s_max)
     opt_state = genoptimizestate(problem, value_fun_state)
@@ -111,11 +110,10 @@ function solve{T<:MathProgBase.SolverInterface.AbstractMathProgSolver}(problem::
 
         new_v, old_v = old_v, new_v
 
-        curr_node[:] = 1
-        curr_s_pos = 1
-        for i=1:clen
+        node_range = CartesianRange(tuple(problem.num_node...))
+        for (i, curr_node)=enumerate(node_range)
             for l=1:length(problem.num_node)
-              opt_state.s_curr_state[l] = s_nodes[l][curr_node[l]]
+              opt_state.s_curr_state[l] = s_nodes[l][curr_node.I[l]]
             end
 
             for l=1:length(problem.x_max)
@@ -144,16 +142,6 @@ function solve{T<:MathProgBase.SolverInterface.AbstractMathProgSolver}(problem::
                 error("Didn't converge at iteration $it and node $i")
             end
 
-            # Counting
-            curr_node[curr_s_pos] += 1
-            if curr_node[curr_s_pos] > problem.num_node[curr_s_pos] && i!=clen
-              while curr_node[curr_s_pos] > problem.num_node[curr_s_pos]
-                curr_node[curr_s_pos] = 1
-                curr_s_pos += 1
-                curr_node[curr_s_pos] += 1
-              end
-              curr_s_pos = 1
-            end
             if print_level>=2
                 ProgressMeter.next!(progress)
             end
