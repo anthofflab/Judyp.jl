@@ -1,3 +1,3 @@
-# JuDP
+# Judyp
 
-[![Build Status](https://travis-ci.org/davidanthoff/JuDP.jl.svg?branch=master)](https://travis-ci.org/davidanthoff/JuDP.jl)
+[![Build Status](https://travis-ci.org/davidanthoff/Judyp.jl.svg?branch=master)](https://travis-ci.org/davidanthoff/Judyp.jl)

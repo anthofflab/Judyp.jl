@@ -1,4 +1,4 @@
-The JuDP.jl package is licensed under the MIT "Expat" License:
+The Judyp.jl package is licensed under the MIT "Expat" License:
 
 > Copyright (c) 2015: David Anthoff.
 >

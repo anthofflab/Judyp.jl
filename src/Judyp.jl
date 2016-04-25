@@ -1,4 +1,4 @@
-module JuDP
+module Judyp
 
 export DynProgProblem
 
@@ -79,7 +79,7 @@ function solve{T<:MathProgBase.SolverInterface.AbstractMathProgSolver}(problem::
         constraint_f(x, g, opt_state)
     end
 
-    evaluator = JuDPNLPEvaluator(
+    evaluator = JudypNLPEvaluator(
         objective_f_with_closure,
         constraint_f_with_closure,
         length(problem.x_min),
