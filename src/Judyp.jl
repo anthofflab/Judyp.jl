@@ -28,11 +28,20 @@ type DynProgProblem
     g_linear::Array{Bool,1}
 end
 
+type JudypDiagnostics
+    count_first_solver_failed::Int64
+
+    function JudypDiagnostics()
+        return new(0)
+    end
+end
+
 type DynProgSolution
     c
     valuefun
     elapsed_solver
     it
+    diagnostics::JudypDiagnostics
 end
 
 include("fchebtensor.jl")
@@ -44,6 +53,8 @@ function solve{T<:MathProgBase.SolverInterface.AbstractMathProgSolver}(problem::
         print_level=1,
         maxit=10000,
         tol=1e-3)
+
+    diag = JudypDiagnostics()
 
     clen = prod(problem.num_node)
     c = zeros(clen)
@@ -136,6 +147,7 @@ function solve{T<:MathProgBase.SolverInterface.AbstractMathProgSolver}(problem::
 
                     break
                 end
+                diag.count_first_solver_failed = diag.count_first_solver_failed + 1
             end
 
             if !solution_found
@@ -156,7 +168,7 @@ function solve{T<:MathProgBase.SolverInterface.AbstractMathProgSolver}(problem::
             if print_level>=1
                 println("Function iteration converged after $it iterations with max. coefficient difference of $step1")
             end
-            return DynProgSolution(c, q->valuefun(q, opt_state.c, opt_state.value_fun_state), elapsed_solver, it)
+            return DynProgSolution(c, q->valuefun(q, opt_state.c, opt_state.value_fun_state), elapsed_solver, it, diag)
         end
 
         if print_level>=2
