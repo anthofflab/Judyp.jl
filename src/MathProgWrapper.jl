@@ -4,9 +4,7 @@ using MathProgBase.SolverInterface
 
 type JudypNLPEvaluator <: AbstractNLPEvaluator
     f::Function
-    grad_f::Function
     g::Function
-    jac_g::Function
 
     xlen::Int
     glen::Int
@@ -16,19 +14,19 @@ type JudypNLPEvaluator <: AbstractNLPEvaluator
     debug_trace::Bool
 
     temp_jac_g_output::Array{Float64,2}
+    temp_g_output::Array{Float64,1}
 
     function JudypNLPEvaluator(f, g, x_len, g_linear;debug_trace=false)
         g_len = length(g_linear)
         new(
             f,
-            ForwardDiff.gradient(f, mutates=true), #Float64, fadtype=:dual, n=x_len),
             g,
-            ForwardDiff.jacobian(g, mutates=true, output_length=g_len), #Float64, fadtype=:dual, n=x_len, m=g_len),
             x_len,
             g_len,
             g_linear,
             debug_trace,
-            Array(Float64, g_len, x_len))
+            Array(Float64, g_len, x_len),
+            Array(Float64, g_len))
     end
 end
 
@@ -60,7 +58,7 @@ end
 function MathProgBase.SolverInterface.eval_grad_f(d::JudypNLPEvaluator, grad_f, x)
     d.debug_trace && print("f'($x) ->")
     try
-        d.grad_f(grad_f, x)
+        ForwardDiff.gradient!(grad_f, d.f, x)
     catch e
         if isa(e, DomainError)
             grad_f[:] = NaN
@@ -102,7 +100,7 @@ end
 function MathProgBase.SolverInterface.eval_jac_g(d::JudypNLPEvaluator, J, x)
     d.debug_trace && print("g'($x) ->")
     try
-        d.jac_g(d.temp_jac_g_output, x)
+        ForwardDiff.jacobian!(d.temp_jac_g_output, d.g, d.temp_g_output, x)
     catch e
         if isa(e, DomainError)
             d.temp_jac_g_output[:,:] = NaN
