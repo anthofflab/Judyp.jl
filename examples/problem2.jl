@@ -1,5 +1,3 @@
-using ArrayViews
-
 function getproblem2(regions=2)
     # Set the economic parameters
 

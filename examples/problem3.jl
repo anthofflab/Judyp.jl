@@ -1,5 +1,3 @@
-using ArrayViews
-
 function getproblem3()
     regions=2
     # Set the economic parameters
@@ -16,7 +14,7 @@ function getproblem3()
     k_0 = K_0/A_0   # Initial level of effective capital
 
     function transition(k,k_new, x)
-        choices = reshape_view(x,(2,regions))
+        choices = reshape(x,(2,regions))
 
         for i=1:length(k)
             k_new[i] = (1-δ)*k[i] + choices[2,i]
@@ -24,7 +22,7 @@ function getproblem3()
     end
 
     function payoff(s, x)
-        choices = reshape_view(x,(2,regions))
+        choices = reshape(x,(2,regions))
 
         ret = zero(eltype(x))
         for i=1:regions
@@ -39,7 +37,7 @@ function getproblem3()
     end
 
     function constraints(state, x, g)
-        choices = reshape_view(x,(2,regions))
+        choices = reshape(x,(2,regions))
 
         for i=1:regions
             k = state[i]

@@ -8,7 +8,7 @@ using MathProgBase
 using CompEcon
 using ProgressMeter
 
-type DynProgProblem
+mutable struct DynProgProblem
     transition_function::Function
     payoff_function::Function
     constraint_function::Function
@@ -28,7 +28,7 @@ type DynProgProblem
     g_linear::Array{Bool,1}
 end
 
-type JudypDiagnostics
+mutable struct JudypDiagnostics
     count_first_solver_failed::Int64
 
     function JudypDiagnostics()
@@ -36,7 +36,7 @@ type JudypDiagnostics
     end
 end
 
-type DynProgSolution
+mutable struct DynProgSolution
     c
     valuefun
     elapsed_solver
@@ -48,18 +48,18 @@ include("fchebtensor.jl")
 include("foptimize.jl")
 include("MathProgWrapper.jl")
 
-function solve{T<:MathProgBase.SolverInterface.AbstractMathProgSolver}(problem::DynProgProblem;
+function solve(problem::DynProgProblem;
         solvers::Array{T,1}=[IpoptSolver(hessian_approximation="limited-memory", print_level=0)],
         print_level=1,
         maxit=10000,
-        tol=1e-3)
+        tol=1e-3) where {T <: MathProgBase.SolverInterface.AbstractMathProgSolver}
 
     diag = JudypDiagnostics()
 
     clen = prod(problem.num_node)
     c = zeros(clen)
     c_old = zeros(clen)
-    x_initial_value = Array(Float64, length(problem.x_min))
+    x_initial_value = Array{Float64}(length(problem.x_min))
     x_init = ones(length(c), length(problem.x_min))
     for i=1:clen
         for l=1:length(problem.x_min)
@@ -74,13 +74,13 @@ function solve{T<:MathProgBase.SolverInterface.AbstractMathProgSolver}(problem::
     value_fun_state = genvaluefunstate(problem.num_node,problem.s_min,problem.s_max)
     opt_state = genoptimizestate(problem, value_fun_state)
 
-    Φ = Array(Array{Float64,2},length(problem.num_node))
+    Φ = Array{Array{Float64,2}}(length(problem.num_node))
     for l=length(problem.num_node):-1:1
       Φ_per_state = [cos((problem.num_node[l]-i+.5)*(j-1)*π/problem.num_node[l]) for i=1:problem.num_node[l],j=1:problem.num_node[l]]
       Φ[length(problem.num_node) - l + 1] = Φ_per_state
     end
 
-    function objective_f_with_closure{T<:Number}(x::Array{T,1})
+    function objective_f_with_closure(x::Array{T,1}) where {T <: Number}
       ret = -objective_f(x, opt_state)
 
       return ret
@@ -112,7 +112,7 @@ function solve{T<:MathProgBase.SolverInterface.AbstractMathProgSolver}(problem::
             evaluator)
     end
 
-    elapsed_solver = Array(Float64,0)
+    elapsed_solver = Array{Float64}(0)
     for it=1:maxit
         progress = ProgressMeter.Progress(clen, "Iteration $it...")#, "Iteration $it...", 50)
 
@@ -158,10 +158,10 @@ function solve{T<:MathProgBase.SolverInterface.AbstractMathProgSolver}(problem::
                 ProgressMeter.next!(progress)
             end
         end
-        c[:] = CompEcon.ckronxi(Φ, new_v)
+        c[:] = BasisMatrices.ckronxi(Φ, new_v)
 
         #step1 = norm(c .- c_old,Inf)
-        step1 = maxabs(c .- c_old)
+        step1 = maximum(abs, c .- c_old)
         step2 = norm(new_v .- old_v,Inf)
 
         if step1<tol  #converged

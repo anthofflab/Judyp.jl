@@ -2,7 +2,7 @@ using ForwardDiff
 using MathProgBase
 using MathProgBase.SolverInterface
 
-type JudypNLPEvaluator <: AbstractNLPEvaluator
+mutable struct JudypNLPEvaluator <: AbstractNLPEvaluator
     f::Function
     g::Function
 
@@ -25,8 +25,8 @@ type JudypNLPEvaluator <: AbstractNLPEvaluator
             g_len,
             g_linear,
             debug_trace,
-            Array(Float64, g_len, x_len),
-            Array(Float64, g_len))
+            Array{Float64}(g_len, x_len),
+            Array{Float64}(g_len))
     end
 end
 
@@ -58,7 +58,7 @@ end
 function MathProgBase.SolverInterface.eval_grad_f(d::JudypNLPEvaluator, grad_f, x)
     d.debug_trace && print("f'($x) ->")
     try
-        ForwardDiff.gradient!(grad_f, d.f, x)
+        ForwardDiff.gradient!(grad_f, d.f, x, ForwardDiff.GradientConfig(nothing, x), Val{false}())
     catch e
         if isa(e, DomainError)
             grad_f[:] = NaN
@@ -70,8 +70,8 @@ function MathProgBase.SolverInterface.eval_grad_f(d::JudypNLPEvaluator, grad_f, 
 end
 
 function MathProgBase.SolverInterface.jac_structure(d::JudypNLPEvaluator)
-    rows = Array(Int,0)
-    cols = Array(Int,0)
+    rows = Array{Int}(0)
+    cols = Array{Int}(0)
 
     for r in 1:d.glen
         for c in 1:d.xlen
@@ -84,8 +84,8 @@ function MathProgBase.SolverInterface.jac_structure(d::JudypNLPEvaluator)
 end
 
 function MathProgBase.SolverInterface.hesslag_structure(d::JudypNLPEvaluator)
-    rows = Array(Int,0)
-    cols = Array(Int,0)
+    rows = Array{Int}(0)
+    cols = Array{Int}(0)
 
     for r in 1:d.xlen
         for c in 1:d.xlen
