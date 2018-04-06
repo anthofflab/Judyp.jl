@@ -71,7 +71,7 @@ function solve(problem::DynProgProblem;
 
     s_nodes = [cheb_nodes(problem.num_node[i], problem.s_min[i], problem.s_max[i]) for i=1:length(problem.num_node)]
 
-    value_fun_state = genvaluefunstate(problem.num_node,problem.s_min,problem.s_max)
+    value_fun_state = genvaluefunstate(problem.num_node,problem.s_min,problem.s_max, length(problem.x_init))
     opt_state = genoptimizestate(problem, value_fun_state)
 
     Φ = Array{Array{Float64,2}}(length(problem.num_node))

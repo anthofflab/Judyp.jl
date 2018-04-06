@@ -1,6 +1,6 @@
 using ForwardDiff
 
-mutable struct optimizestate
+mutable struct optimizestate{NCHOICE}
     n_states::Int64
     f_transition::Function
     f_payoff::Function
@@ -10,11 +10,12 @@ mutable struct optimizestate
     c::Array{Float64,1}
     value_fun_state::valuefunstate
     temp_new_state_float64::Array{Float64,1}
-    temp_new_state_dual::Array{ForwardDiff.Dual{Void,Float64,4},1}
+    temp_new_state_dual::Array{ForwardDiff.Dual{Void,Float64,NCHOICE},1}
 end
 
 function genoptimizestate(problem::DynProgProblem, value_fun_state)
-    os = optimizestate(
+    nchoice = length(problem.x_init)
+    os = optimizestate{nchoice}(
         length(value_fun_state.n_nodes),
         problem.transition_function,
         problem.payoff_function,
@@ -24,7 +25,7 @@ function genoptimizestate(problem::DynProgProblem, value_fun_state)
         zeros(1), # This could be left uninitialized
         value_fun_state,
         Array{Float64}(length(value_fun_state.n_nodes)),
-        Array{ForwardDiff.Dual{Void,Float64,4}}(length(value_fun_state.n_nodes)))
+        Array{ForwardDiff.Dual{Void,Float64,nchoice}}(length(value_fun_state.n_nodes)))
     return os
 end
 
@@ -32,7 +33,7 @@ function getrighttemparray(::Type{Float64},state::optimizestate)
     return state.temp_new_state_float64
 end
 
-function getrighttemparray(::Type{ForwardDiff.Dual{T,Float64,4}},state::optimizestate) where T
+function getrighttemparray(::Type{ForwardDiff.Dual{Void,Float64,NCHOICE}},state::optimizestate) where NCHOICE
     return state.temp_new_state_dual
 end
 
