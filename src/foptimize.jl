@@ -1,6 +1,6 @@
 using ForwardDiff
 
-mutable struct optimizestate{NCHOICE}
+mutable struct optimizestate{NCHOICE,T}
     n_states::Int64
     f_transition::Function
     f_payoff::Function
@@ -11,11 +11,12 @@ mutable struct optimizestate{NCHOICE}
     value_fun_state::valuefunstate
     temp_new_state_float64::Array{Float64,1}
     temp_new_state_dual::Array{ForwardDiff.Dual{Void,Float64,NCHOICE},1}
+    ex_params::T
 end
 
 function genoptimizestate(problem::DynProgProblem, value_fun_state)
     nchoice = length(problem.x_init)
-    os = optimizestate{nchoice}(
+    os = optimizestate{nchoice,typeof(problem.ex_params)}(
         length(value_fun_state.n_nodes),
         problem.transition_function,
         problem.payoff_function,
@@ -25,7 +26,8 @@ function genoptimizestate(problem::DynProgProblem, value_fun_state)
         zeros(1), # This could be left uninitialized
         value_fun_state,
         Array{Float64}(length(value_fun_state.n_nodes)),
-        Array{ForwardDiff.Dual{Void,Float64,nchoice}}(length(value_fun_state.n_nodes)))
+        Array{ForwardDiff.Dual{Void,Float64,nchoice}}(length(value_fun_state.n_nodes)),
+        problem.ex_params)
     return os
 end
 
@@ -40,15 +42,15 @@ end
 function objective_f(x::Array{T,1}, state::optimizestate) where {T <: Number}
     k_new = getrighttemparray(T, state)
 
-    state.f_transition(state.s_curr_state, k_new, x)
+    state.f_transition(state.s_curr_state, k_new, x, state.ex_params)
 
-    payoff = state.f_payoff(state.s_curr_state, x)
+    payoff = state.f_payoff(state.s_curr_state, x, state.ex_params)
 
     v = valuefun(k_new, state.c, state.value_fun_state)
 
-    return payoff + state.f_discountfactor(state.s_curr_state) * v
+    return payoff + state.f_discountfactor(state.s_curr_state, state.ex_params) * v
 end
 
 function constraint_f(x::Array{T,1}, g, state::optimizestate) where {T <: Number}
-    state.f_constraint(state.s_curr_state, x, g)
+    state.f_constraint(state.s_curr_state, x, g, state.ex_params)
 end

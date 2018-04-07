@@ -8,7 +8,7 @@ using MathProgBase
 using CompEcon
 using ProgressMeter
 
-mutable struct DynProgProblem
+mutable struct DynProgProblem{T}
     transition_function::Function
     payoff_function::Function
     constraint_function::Function
@@ -26,6 +26,8 @@ mutable struct DynProgProblem
     g_min::Array{Float64,1}
     g_max::Array{Float64,1}
     g_linear::Array{Bool,1}
+
+    ex_params::T
 end
 
 mutable struct JudypDiagnostics
