@@ -30,6 +30,92 @@ mutable struct DynProgProblem{T}
     ex_params::T
 end
 
+mutable struct DynProgState{T}
+    problem::DynProgProblem{T}
+
+    clen::Int
+    c::Vector{Float64}
+    c_old::Vector{Float64}
+    x_initial_value::Vector{Float64}
+    x_init::Matrix{Float64}
+    new_v::Vector{Float64}
+    old_v::Vector{Float64}
+
+    s_nodes::Vector{Vector{Float64}}
+
+    value_fun_state
+    opt_state
+
+    Φ::Vector{Matrix{Float64}}
+
+    mathprog_problems
+
+    function DynProgState(problem::DynProgProblem{T}, solver_constructors) where {T}
+        clen = prod(problem.num_node)
+        c = zeros(clen)
+        c_old = zeros(clen)
+        x_initial_value = Array{Float64}(length(problem.x_min))
+        x_init = ones(length(c), length(problem.x_min))
+        for i=1:clen
+            for l=1:length(problem.x_min)
+                x_init[i,l] = problem.x_init[l]
+            end
+        end
+        new_v = zeros(length(c))
+        old_v = zeros(length(c))
+
+        s_nodes = [cheb_nodes(problem.num_node[i], problem.s_min[i], problem.s_max[i]) for i=1:length(problem.num_node)]
+
+        value_fun_state = genvaluefunstate(problem.num_node,problem.s_min,problem.s_max, length(problem.x_init))
+
+        opt_state = genoptimizestate(problem, value_fun_state)
+
+        Φ = Array{Array{Float64,2}}(length(problem.num_node))
+        for l=length(problem.num_node):-1:1
+          Φ_per_state = [cos((problem.num_node[l]-i+.5)*(j-1)*π/problem.num_node[l]) for i=1:problem.num_node[l],j=1:problem.num_node[l]]
+          Φ[length(problem.num_node) - l + 1] = Φ_per_state
+        end               
+
+        evaluator = JudypNLPEvaluator(
+            x -> -objective_f(x, opt_state),
+            (g,x) -> constraint_f(x, g, opt_state),
+            length(problem.x_min),
+            problem.g_linear,
+            debug_trace=false
+        )
+      
+        # MathProg stuff
+        mathprog_problems = [NonlinearModel(sc()) for sc in solver_constructors]
+      
+        for mp in mathprog_problems
+            loadproblem!(
+                mp,
+                length(problem.x_min),
+                length(problem.g_min),
+                problem.x_min, problem.x_max,
+                problem.g_min, problem.g_max,
+                :Min,
+                evaluator)
+        end        
+
+        return new{T}(
+            problem,
+            clen,
+            c,
+            c_old,
+            x_initial_value,
+            x_init,
+            new_v,
+            old_v,
+            s_nodes,
+            value_fun_state,
+            opt_state,
+            Φ,
+            mathprog_problems
+        )
+    end
+end
+
 mutable struct JudypDiagnostics
     count_first_solver_failed::Int64
 
@@ -51,91 +137,37 @@ include("foptimize.jl")
 include("MathProgWrapper.jl")
 
 function solve(problem::DynProgProblem;
-        solvers::Array{T,1}=[IpoptSolver(hessian_approximation="limited-memory", print_level=0)],
+        solver_constructors::Vector{Function}=[()->IpoptSolver(hessian_approximation="limited-memory", print_level=0)],
         print_level=1,
         maxit=10000,
-        tol=1e-3) where {T <: MathProgBase.SolverInterface.AbstractMathProgSolver}
+        tol=1e-3)
 
     diag = JudypDiagnostics()
 
-    clen = prod(problem.num_node)
-    c = zeros(clen)
-    c_old = zeros(clen)
-    x_initial_value = Array{Float64}(length(problem.x_min))
-    x_init = ones(length(c), length(problem.x_min))
-    for i=1:clen
-        for l=1:length(problem.x_min)
-            x_init[i,l] = problem.x_init[l]
-        end
-    end
-    new_v = zeros(length(c))
-    old_v = zeros(length(c))
-
-    s_nodes = [cheb_nodes(problem.num_node[i], problem.s_min[i], problem.s_max[i]) for i=1:length(problem.num_node)]
-
-    value_fun_state = genvaluefunstate(problem.num_node,problem.s_min,problem.s_max, length(problem.x_init))
-    opt_state = genoptimizestate(problem, value_fun_state)
-
-    Φ = Array{Array{Float64,2}}(length(problem.num_node))
-    for l=length(problem.num_node):-1:1
-      Φ_per_state = [cos((problem.num_node[l]-i+.5)*(j-1)*π/problem.num_node[l]) for i=1:problem.num_node[l],j=1:problem.num_node[l]]
-      Φ[length(problem.num_node) - l + 1] = Φ_per_state
-    end
-
-    function objective_f_with_closure(x::Array{T,1}) where {T <: Number}
-      ret = -objective_f(x, opt_state)
-
-      return ret
-    end
-
-    function constraint_f_with_closure(g, x)
-        constraint_f(x, g, opt_state)
-    end
-
-    evaluator = JudypNLPEvaluator(
-        objective_f_with_closure,
-        constraint_f_with_closure,
-        length(problem.x_min),
-        problem.g_linear,
-        debug_trace=false
-        )
-
-    # MathProg stuff
-    mathprog_problems = [NonlinearModel(s) for s in solvers]
-
-    for mp in mathprog_problems
-        loadproblem!(
-            mp,
-            length(problem.x_min),
-            length(problem.g_min),
-            problem.x_min, problem.x_max,
-            problem.g_min, problem.g_max,
-            :Min,
-            evaluator)
-    end
+    dpstate = DynProgState(problem, solver_constructors)      
 
     elapsed_solver = Array{Float64}(0)
     for it=1:maxit
-        progress = ProgressMeter.Progress(clen, "Iteration $it...")#, "Iteration $it...", 50)
+        progress = ProgressMeter.Progress(dpstate.clen, "Iteration $it...")#, "Iteration $it...", 50)
 
-        c, c_old = c_old, c
-        opt_state.c = c_old
+        dpstate.c, dpstate.c_old = dpstate.c_old, dpstate.c
+        dpstate.opt_state.c = dpstate.c_old
 
-        new_v, old_v = old_v, new_v
+        dpstate.new_v, dpstate.old_v = dpstate.old_v, dpstate.new_v
 
         node_range = CartesianRange(tuple(problem.num_node...))
         for (i, curr_node)=enumerate(node_range)
             for l=1:length(problem.num_node)
-              opt_state.s_curr_state[l] = s_nodes[l][curr_node.I[l]]
+                dpstate.opt_state.s_curr_state[l] = dpstate.s_nodes[l][curr_node.I[l]]
             end
 
             for l=1:length(problem.x_max)
-                x_initial_value[l] = x_init[i,l]
+                dpstate.x_initial_value[l] = dpstate.x_init[i,l]
             end
 
             solution_found = false
-            for mp in mathprog_problems
-                setwarmstart!(mp,x_initial_value)
+            for mp in dpstate.mathprog_problems
+                setwarmstart!(mp,dpstate.x_initial_value)
                 elapsed = @elapsed optimize!(mp)
                 push!(elapsed_solver, elapsed)
                 stat = status(mp)
@@ -143,9 +175,9 @@ function solve(problem::DynProgProblem;
                 if stat==:Optimal || stat==:FeasibleApproximate
                     solution_found = true
 
-                    x_init[i, :] = getsolution(mp)
+                    dpstate.x_init[i, :] = getsolution(mp)
 
-                    new_v[i] = - getobjval(mp)
+                    dpstate.new_v[i] = - getobjval(mp)
 
                     break
                 end
@@ -160,17 +192,17 @@ function solve(problem::DynProgProblem;
                 ProgressMeter.next!(progress)
             end
         end
-        c[:] = BasisMatrices.ckronxi(Φ, new_v)
+        dpstate.c[:] = BasisMatrices.ckronxi(dpstate.Φ, dpstate.new_v)
 
         #step1 = norm(c .- c_old,Inf)
-        step1 = maximum(abs, c .- c_old)
-        step2 = norm(new_v .- old_v,Inf)
+        step1 = maximum(abs, dpstate.c .- dpstate.c_old)
+        step2 = norm(dpstate.new_v .- dpstate.old_v,Inf)
 
         if step1<tol  #converged
             if print_level>=1
                 println("Function iteration converged after $it iterations with max. coefficient difference of $step1")
             end
-            return DynProgSolution(c, q->valuefun(q, opt_state.c, opt_state.value_fun_state), elapsed_solver, it, diag)
+            return DynProgSolution(dpstate.c, q->valuefun(q, dpstate.opt_state.c, dpstate.opt_state.value_fun_state), elapsed_solver, it, diag)
         end
 
         if print_level>=2

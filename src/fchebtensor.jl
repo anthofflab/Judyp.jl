@@ -1,6 +1,6 @@
 using ForwardDiff
 
-mutable struct valuefunstate{NCHOICE}
+mutable struct ValueFunState{NCHOICE}
   n_nodes::Array{Int64,1}
   s_min::Array{Float64,1}
   s_max::Array{Float64,1}
@@ -15,7 +15,7 @@ function cheb_nodes(num_node, a, b)
 end
 
 function genvaluefunstate(n_nodes, s_min, s_max, nchoice)
-  vs = valuefunstate{nchoice}(n_nodes, s_min,
+  vs = ValueFunState{nchoice}(n_nodes, s_min,
     s_max,
     Array{Int}(length(n_nodes)),
     Array{Vector{Float64}}(length(n_nodes)),
@@ -30,15 +30,15 @@ function genvaluefunstate(n_nodes, s_min, s_max, nchoice)
   return vs
 end
 
-function getrighttemparray(::Type{Float64},state::valuefunstate)
+function getrighttemparray(::Type{Float64},state::ValueFunState)
   return state.temp_cheb_vals_float64
 end
 
-function getrighttemparray(::Type{ForwardDiff.Dual{Void,Float64,NCHOICE}},state::valuefunstate) where {NCHOICE}
+function getrighttemparray(::Type{ForwardDiff.Dual{Void,Float64,NCHOICE}},state::ValueFunState) where {NCHOICE}
   return state.temp_cheb_vals_duals
 end
 
-function valuefun(s_unscaled::Array{T,1}, c::Array{Float64,1}, state::valuefunstate) where {T <: Number}
+function valuefun(s_unscaled::Array{T,1}, c::Array{Float64,1}, state::ValueFunState) where {T <: Number}
   n_states = length(state.n_nodes)
   temparray = getrighttemparray(T,state)
 

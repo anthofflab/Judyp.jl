@@ -1,47 +1,51 @@
+using NamedTuples
+
 function getproblem2(regions=2)
     # Set the economic parameters
 
-    η = 2.        # Consumption smoothing parameter
-    ρ = 0.015     # Annual rate of pure time preference
-    κ = 0.3       # Capital share
-    δ = 0.1       # Capital depreciation rate
-    g = 0.0       # Rate of technological progress
-    L = 7.        # Global labor force in billions of people
+    ex_params = @NT(
+        regions = regions,
+        η = 2.,        # Consumption smoothing parameter
+        ρ = 0.015,     # Annual rate of pure time preference
+        κ = 0.3,       # Capital share
+        δ = 0.1,       # Capital depreciation rate
+        g = 0.0,       # Rate of technological progress
+        L = 7.,        # Global labor force in billions of people
+        K_0 = 80.,       # Initial capital stock
+        A_0 = 1.,        # Initial level of technology
+        k_0 = 80./1.   # Initial level of effective capital K_0/A_0
+    )
 
-    K_0 = 80.       # Initial capital stock
-    A_0 = 1.        # Initial level of technology
-    k_0 = K_0/A_0   # Initial level of effective capital
+    Y(k, p) = (k^p.κ)*p.L^(1-p.κ)
 
-    Y(k) = (k^κ)*L^(1-κ)
-
-    function transition(k,k_new, x)
-        choices = reshape_view(x,(2,regions))
+    function transition(k,k_new, x, p)
+        choices = reshape(x,(2,p.regions))
 
         for i=1:length(k)
-            k_new[i] = (1-δ)*k[i] + choices[2,i]
+            k_new[i] = (1-p.δ)*k[i] + choices[2,i]
         end
     end
 
-    function payoff(s, x)
-        choices = reshape_view(x,(2,regions))
+    function payoff(s, x, p)
+        choices = reshape(x,(2,p.regions))
 
         ret = zero(eltype(x))
-        for i=1:regions
+        for i=1:p.regions
             consumption = choices[1,i]
-            ret += (consumption^(1-η))/(1-η)
+            ret += (consumption^(1-p.η))/(1-p.η)
         end
         return ret
     end
 
-    function discountfactor(state)
-        return exp(-ρ)
+    function discountfactor(state, p)
+        return exp(-p.ρ)
     end
 
-    function constraints(state, x, g)
-        choices = reshape_view(x,(2,regions))
+    function constraints(state, x, g, p)
+        choices = reshape(x,(2,p.regions))
 
-        for i=1:regions
-            g[i] = Y(state[i]) - choices[1,i] - choices[2,i]
+        for i=1:p.regions
+            g[i] = Y(state[i], p) - choices[1,i] - choices[2,i]
         end
     end
 
@@ -68,7 +72,8 @@ function getproblem2(regions=2)
         x_init,
         g_min,
         g_max,
-        g_linear)
+        g_linear,
+        ex_params)
 
 	return problem
 end
