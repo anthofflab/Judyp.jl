@@ -3,3 +3,4 @@ ForwardDiff 0.2
 MathProgBase
 ProgressMeter
 CompEcon
+ParallelDataTransfer
