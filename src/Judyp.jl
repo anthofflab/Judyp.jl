@@ -145,21 +145,18 @@ function solve_node(dpstate::DynProgState, diag, i, curr_node, it)
     new_v = 0.
     for mp in dpstate.mathprog_problems
         setwarmstart!(mp,dpstate.x_initial_value)
-        try
-            elapsed = @elapsed optimize!(mp)
-            # push!(elapsed_solver, elapsed)
-            stat = status(mp)
+        elapsed = @elapsed optimize!(mp)
+        # push!(elapsed_solver, elapsed)
+        stat = status(mp)
 
-            if stat==:Optimal || stat==:FeasibleApproximate
-                solution_found = true
+        if stat==:Optimal || stat==:FeasibleApproximate
+            solution_found = true
 
-                dpstate.x_init[i, :] = getsolution(mp)
+            dpstate.x_init[i, :] = getsolution(mp)
 
-                new_v = - getobjval(mp)
+            new_v = - getobjval(mp)
 
-                break
-            end
-        catch e
+            break
         end
         diag.count_first_solver_failed = diag.count_first_solver_failed + 1
     end
@@ -182,10 +179,10 @@ function pnodeloopinner(dpstate, diag, node_range, batch_size, it)
         #     ProgressMeter.next!(progress)
         # end
     end   
-    return vs 
+    return vs
 end
 
-function pnodeloop(chunk)
+function pnodeloop()
     return Judyp.pnodeloopinner(Main.dpstate, Main.diag, Main.node_range, Main.batch_size, Main.it)
 end
 
@@ -208,7 +205,7 @@ function psolve(problem::DynProgProblem;
     mypassobj(workers(), :problem, problem)
     println("B")
     # @passobj 1 workers() solver_constructors
-    @broadcast solver_constructors = [() -> NLoptSolver(algorithm=:LD_SLSQP), () -> IpoptSolver(hessian_approximation="limited-memory", max_iter=10000, print_level=0, bound_relax_factor=0.)]
+    @broadcast solver_constructors = [() -> NLoptSolver(algorithm=:LD_SLSQP, maxtime=2), () -> IpoptSolver(hessian_approximation="limited-memory", max_iter=10000, print_level=0, bound_relax_factor=0.)]
     println("C")
     @broadcast dpstate = Judyp.DynProgState(problem, solver_constructors)
     println("D")
@@ -247,7 +244,9 @@ function psolve(problem::DynProgProblem;
 
         new_v, old_v = old_v, new_v
 
-        vs = pmap(Judyp.pnodeloop, workers())
+        @broadcast new_vs = Judyp.pnodeloop()
+
+        vs = asyncmap(i->getfrom(i, :new_vs), workers())
 
         # @broadcast for (i, curr_node)=Iterators.take(Iterators.drop(enumerate(node_range), (myid()-2) * batch_size), batch_size)
         #     v_new = Judyp.solve_node(dpstate, i, curr_node)
@@ -263,7 +262,7 @@ function psolve(problem::DynProgProblem;
         end
 
         c[:] = BasisMatrices.ckronxi(Φ, new_v)
-
+        
         #step1 = norm(c .- c_old,Inf)
         step1 = maximum(abs, c .- c_old)
         step2 = norm(new_v .- old_v,Inf)
@@ -272,7 +271,11 @@ function psolve(problem::DynProgProblem;
             if print_level>=1
                 println("Function iteration converged after $it iterations with max. coefficient difference of $step1")
             end
-            return DynProgSolution(dpstate.c, q->valuefun(q, dpstate.opt_state.c, dpstate.opt_state.value_fun_state), elapsed_solver, it, diag)
+
+            dpstate = DynProgState(problem, solver_constructors)
+            dpstate.opt_state.c = c
+        
+            return DynProgSolution(dpstate.c, q->valuefun(q, dpstate.opt_state.c, dpstate.opt_state.value_fun_state), elapsed_solver, it, JudypDiagnostics())
         end
 
         if print_level>=2

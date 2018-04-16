@@ -1,4 +1,4 @@
-# addprocs()
+addprocs(4)
 
 @everywhere using Judyp
 @everywhere using ParallelDataTransfer
@@ -19,7 +19,7 @@ ipopt_solver = () -> IpoptSolver(hessian_approximation="limited-memory", max_ite
 
 # addprocs()
 
-res = solve(problem, solver_constructors=[nlopt_solver, ipopt_solver], print_level=2)
+@time res = psolve(problem, solver_constructors=[nlopt_solver, ipopt_solver], print_level=2)
 
 v = res.valuefun
 
