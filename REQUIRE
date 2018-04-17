@@ -4,3 +4,6 @@ MathProgBase
 ProgressMeter
 CompEcon
 ParallelDataTransfer
+NLopt
+Ipopt
+NamedTuples
