@@ -8,7 +8,9 @@ using MathProgBase
 using CompEcon
 using ProgressMeter
 using ParallelDataTransfer
-
+using NLopt
+using Ipopt
+using NamedTuples
 mutable struct DynProgProblem{T}
     transition_function::Function
     payoff_function::Function
@@ -201,6 +203,8 @@ function psolve(problem::DynProgProblem;
         maxit=10000,
         tol=1e-3)
 
+    @eval @everywhere using Judyp
+
     println("A")
     mypassobj(workers(), :problem, problem)
     println("B")
@@ -287,7 +291,7 @@ function psolve(problem::DynProgProblem;
 end
 
 function solve(problem::DynProgProblem;
-    solver_constructors::Vector{Function}=[()->IpoptSolver(hessian_approximation="limited-memory", print_level=0)],
+    solver_constructors::Vector{Function}=[() -> NLoptSolver(algorithm=:LD_SLSQP, maxtime=2), () -> IpoptSolver(hessian_approximation="limited-memory", max_iter=10000, print_level=0, bound_relax_factor=0.)],
     print_level=1,
     maxit=10000,
     tol=1e-3)
