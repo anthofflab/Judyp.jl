@@ -1,10 +1,11 @@
+# using Distributed
 # addprocs(4)
 
 using Judyp
 # @everywhere using NLopt
 # @everywhere using Ipopt
 # using KNITRO
-using Gadfly
+# using Gadfly
 # cd("examples")
 include("problem3.jl")
 

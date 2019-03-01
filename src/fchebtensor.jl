@@ -7,7 +7,7 @@ mutable struct ValueFunState{NCHOICE}
 
   temp_curr_node::Array{Int64,1}
   temp_cheb_vals_float64::Array{Array{Float64,1},1}
-  temp_cheb_vals_duals::Array{Array{ForwardDiff.Dual{Void,Float64,NCHOICE},1},1}
+  temp_cheb_vals_duals::Array{Array{ForwardDiff.Dual{Nothing,Float64,NCHOICE},1},1}
 end
 
 function cheb_nodes(num_node, a, b)
@@ -17,14 +17,14 @@ end
 function genvaluefunstate(n_nodes, s_min, s_max, nchoice)
   vs = ValueFunState{nchoice}(n_nodes, s_min,
     s_max,
-    Array{Int}(length(n_nodes)),
-    Array{Vector{Float64}}(length(n_nodes)),
-    Array{Vector{ForwardDiff.ForwardDiff.Dual{Void,Float64,nchoice}}}(length(n_nodes))
+    Array{Int}(undef, length(n_nodes)),
+    Array{Vector{Float64}}(undef, length(n_nodes)),
+    Array{Vector{ForwardDiff.ForwardDiff.Dual{Nothing,Float64,nchoice}}}(undef, length(n_nodes))
     )
 
   for i=1:length(n_nodes)
-    vs.temp_cheb_vals_float64[i] = Array{Float64}(n_nodes[i])
-    vs.temp_cheb_vals_duals[i] = Array{ForwardDiff.Dual{Void,Float64,nchoice}}(n_nodes[i])
+    vs.temp_cheb_vals_float64[i] = Array{Float64}(undef, n_nodes[i])
+    vs.temp_cheb_vals_duals[i] = Array{ForwardDiff.Dual{Nothing,Float64,nchoice}}(undef, n_nodes[i])
   end
 
   return vs
@@ -34,7 +34,7 @@ function getrighttemparray(::Type{Float64},state::ValueFunState)
   return state.temp_cheb_vals_float64
 end
 
-function getrighttemparray(::Type{ForwardDiff.Dual{Void,Float64,NCHOICE}},state::ValueFunState) where {NCHOICE}
+function getrighttemparray(::Type{ForwardDiff.Dual{Nothing,Float64,NCHOICE}},state::ValueFunState) where {NCHOICE}
   return state.temp_cheb_vals_duals
 end
 
@@ -68,7 +68,7 @@ function valuefun(s_unscaled::Array{T,1}, c::Array{Float64,1}, state::ValueFunSt
   # Tensor basis related computations
   ret = zero(T)
 
-  state.temp_curr_node[:] = 1
+  state.temp_curr_node[:] .= 1
   curr_s_pos = 1
   clen = length(c)
   for i=1:clen

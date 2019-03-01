@@ -1,9 +1,7 @@
-using NamedTuples
-
 function getproblem3()    
     # Set the economic parameters
 
-    ex_params = @NT(
+    ex_params = (
         regions=2,
         η = 2.,        # Consumption smoothing parameter
         ρ = 0.015,     # Annual rate of pure time preference
@@ -13,7 +11,7 @@ function getproblem3()
         L = [2., 5.],  # Global labor force in billions of people
         K_0 = 80.,     # Initial capital stock
         A_0 = 1.,      # Initial level of technology
-        k_0 = 80./1.   # Initial level of effective capital K_0/A_0
+        k_0 = 80 ./ 1.   # Initial level of effective capital K_0/A_0
     )
 
     function transition(k,k_new, x, p)

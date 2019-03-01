@@ -10,7 +10,7 @@ mutable struct OptimizeState{NCHOICE,T}
     c::Array{Float64,1}
     value_fun_state::ValueFunState
     temp_new_state_float64::Array{Float64,1}
-    temp_new_state_dual::Array{ForwardDiff.Dual{Void,Float64,NCHOICE},1}
+    temp_new_state_dual::Array{ForwardDiff.Dual{Nothing,Float64,NCHOICE},1}
     ex_params::T
 end
 
@@ -22,11 +22,11 @@ function genoptimizestate(problem::DynProgProblem, value_fun_state)
         problem.payoff_function,
         problem.constraint_function,
         problem.discountfactor_function,
-        Array{Float64}(length(value_fun_state.n_nodes)),
+        Array{Float64}(undef, length(value_fun_state.n_nodes)),
         zeros(1), # This could be left uninitialized
         value_fun_state,
-        Array{Float64}(length(value_fun_state.n_nodes)),
-        Array{ForwardDiff.Dual{Void,Float64,nchoice}}(length(value_fun_state.n_nodes)),
+        Array{Float64}(undef, length(value_fun_state.n_nodes)),
+        Array{ForwardDiff.Dual{Nothing,Float64,nchoice}}(undef, length(value_fun_state.n_nodes)),
         problem.ex_params)
     return os
 end
@@ -35,7 +35,7 @@ function getrighttemparray(::Type{Float64},state::OptimizeState)
     return state.temp_new_state_float64
 end
 
-function getrighttemparray(::Type{ForwardDiff.Dual{Void,Float64,NCHOICE}},state::OptimizeState) where NCHOICE
+function getrighttemparray(::Type{ForwardDiff.Dual{Nothing,Float64,NCHOICE}},state::OptimizeState) where NCHOICE
     return state.temp_new_state_dual
 end
 

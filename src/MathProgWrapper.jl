@@ -25,8 +25,8 @@ mutable struct JudypNLPEvaluator <: AbstractNLPEvaluator
             g_len,
             g_linear,
             debug_trace,
-            Array{Float64}(g_len, x_len),
-            Array{Float64}(g_len))
+            Array{Float64}(undef, g_len, x_len),
+            Array{Float64}(undef, g_len))
     end
 end
 
@@ -70,8 +70,8 @@ function MathProgBase.SolverInterface.eval_grad_f(d::JudypNLPEvaluator, grad_f, 
 end
 
 function MathProgBase.SolverInterface.jac_structure(d::JudypNLPEvaluator)
-    rows = Array{Int}(0)
-    cols = Array{Int}(0)
+    rows = Array{Int}(undef, 0)
+    cols = Array{Int}(undef, 0)
 
     for r in 1:d.glen
         for c in 1:d.xlen
@@ -84,8 +84,8 @@ function MathProgBase.SolverInterface.jac_structure(d::JudypNLPEvaluator)
 end
 
 function MathProgBase.SolverInterface.hesslag_structure(d::JudypNLPEvaluator)
-    rows = Array{Int}(0)
-    cols = Array{Int}(0)
+    rows = Array{Int}(undef, 0)
+    cols = Array{Int}(undef, 0)
 
     for r in 1:d.xlen
         for c in 1:d.xlen

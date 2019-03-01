@@ -1,5 +1,7 @@
 module Judyp
 
+using Distributed, LinearAlgebra
+
 export DynProgProblem
 
 export solve, psolve
@@ -10,7 +12,7 @@ using ProgressMeter
 using ParallelDataTransfer
 using NLopt
 using Ipopt
-using NamedTuples
+
 mutable struct DynProgProblem{T}
     transition_function::Function
     payoff_function::Function
@@ -57,7 +59,7 @@ mutable struct DynProgState{T}
         clen = prod(problem.num_node)
         c = zeros(clen)
         c_old = zeros(clen)
-        x_initial_value = Array{Float64}(length(problem.x_min))
+        x_initial_value = Array{Float64}(undef, length(problem.x_min))
         x_init = ones(length(c), length(problem.x_min))
         for i=1:clen
             for l=1:length(problem.x_min)
@@ -192,13 +194,13 @@ function mypassobj(target::AbstractVector{Int}, nm::Symbol, value; to_mod=Main)
     r = RemoteChannel(myid())
     put!(r, value)
     @sync for to in target
-        @spawnat(to, eval(to_mod, Expr(:(=), nm, fetch(r))))
+        @spawnat(to, Core.eval(to_mod, Expr(:(=), nm, fetch(r))))
     end
     nothing
 end
 
 function psolve(problem::DynProgProblem;
-        solver_constructors::Vector{Function}=[()->IpoptSolver(hessian_approximation="limited-memory", print_level=0)],
+        solver_constructors,#[()->IpoptSolver(hessian_approximation="limited-memory", print_level=0)],
         print_level=1,
         maxit=10000,
         tol=1e-3)
@@ -213,7 +215,7 @@ function psolve(problem::DynProgProblem;
     println("C")
     @broadcast dpstate = Judyp.DynProgState(problem, solver_constructors)
     println("D")
-    @broadcast node_range = CartesianRange(tuple(problem.num_node...))
+    @broadcast node_range = CartesianIndices(tuple(problem.num_node...))
     println("E")
     @broadcast batch_size = Int(round(length(node_range)/length(workers()), RoundUp))
     println("F")
@@ -227,13 +229,13 @@ function psolve(problem::DynProgProblem;
     new_v = zeros(clen)
     old_v = zeros(clen)
 
-    Φ = Array{Array{Float64,2}}(length(problem.num_node))
+    Φ = Array{Array{Float64,2}}(undef, length(problem.num_node))
         for l=length(problem.num_node):-1:1
           Φ_per_state = [cos((problem.num_node[l]-i+.5)*(j-1)*π/problem.num_node[l]) for i=1:problem.num_node[l],j=1:problem.num_node[l]]
           Φ[length(problem.num_node) - l + 1] = Φ_per_state
     end
 
-    elapsed_solver = Array{Float64}(0)
+    elapsed_solver = Array{Float64}(undef, 0)
     for it=1:maxit
         println("Iteration $it...")
         # progress = ProgressMeter.Progress(dpstate.clen, "Iteration $it...")
@@ -300,13 +302,13 @@ function solve(problem::DynProgProblem;
 
     dpstate = DynProgState(problem, solver_constructors)     
     
-    Φ = Array{Array{Float64,2}}(length(problem.num_node))
+    Φ = Array{Array{Float64,2}}(undef, length(problem.num_node))
     for l=length(problem.num_node):-1:1
         Φ_per_state = [cos((problem.num_node[l]-i+.5)*(j-1)*π/problem.num_node[l]) for i=1:problem.num_node[l],j=1:problem.num_node[l]]
         Φ[length(problem.num_node) - l + 1] = Φ_per_state
     end
 
-    elapsed_solver = Array{Float64}(0)
+    elapsed_solver = Array{Float64}(undef, 0)
     for it=1:maxit
         progress = ProgressMeter.Progress(dpstate.clen, "Iteration $it...")
 
@@ -315,7 +317,7 @@ function solve(problem::DynProgProblem;
 
         dpstate.new_v, dpstate.old_v = dpstate.old_v, dpstate.new_v
 
-        node_range = CartesianRange(tuple(problem.num_node...))
+        node_range = CartesianIndices(tuple(problem.num_node...))
         for (i, curr_node)=enumerate(node_range)
             v_new = solve_node(dpstate, diag, i, curr_node, it)
 

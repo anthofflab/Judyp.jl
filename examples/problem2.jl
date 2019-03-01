@@ -1,9 +1,7 @@
-using NamedTuples
-
 function getproblem2(regions=2)
     # Set the economic parameters
 
-    ex_params = @NT(
+    ex_params = (
         regions = regions,
         η = 2.,        # Consumption smoothing parameter
         ρ = 0.015,     # Annual rate of pure time preference
