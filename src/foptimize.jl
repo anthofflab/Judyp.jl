@@ -47,12 +47,17 @@ function objective_f(x::Array{T,1}, state::OptimizeState) where {T <: Number}
     k_new = getrighttemparray(T, state)
 
     payoff = state.f_payoff(state.s_curr_state, x, state.ex_params)
+    
+    v = zero(T)
 
-    v = zero(T)    
-
-    for i=1:length(state.uncertain_weights)
-        state.f_transition(state.s_curr_state, k_new, x, view(state.uncertain_nodes, i, :), state.ex_params)
-        v += state.uncertain_weights[i] * valuefun(k_new, state.c, state.value_fun_state)
+    if length(state.uncertain_weights) == 0
+        state.f_transition(state.s_curr_state, k_new, x, nothing, state.ex_params)
+        v += valuefun(k_new, state.c, state.value_fun_state)
+    else
+        for i=1:length(state.uncertain_weights)
+            state.f_transition(state.s_curr_state, k_new, x, view(state.uncertain_nodes, i, :), state.ex_params)
+            v += state.uncertain_weights[i] * valuefun(k_new, state.c, state.value_fun_state)
+        end
     end
 
     return payoff + state.f_discountfactor(state.s_curr_state, state.ex_params) * v
