@@ -280,6 +280,7 @@ function psolve(problem::DynProgProblem;
 
             dpstate = DynProgState(problem, solver_constructors)
             dpstate.opt_state.c = c
+            dpstate.c = c
         
             return DynProgSolution(dpstate.c, q->valuefun(q, dpstate.opt_state.c, dpstate.opt_state.value_fun_state), elapsed_solver, it, JudypDiagnostics())
         end
