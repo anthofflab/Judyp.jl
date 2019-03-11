@@ -12,6 +12,8 @@ mutable struct OptimizeState{NCHOICE,T}
     temp_new_state_float64::Array{Float64,1}
     temp_new_state_dual::Array{ForwardDiff.Dual{Nothing,Float64,NCHOICE},1}
     ex_params::T
+    uncertain_weights::Vector{Float64}
+    uncertain_nodes::Matrix{Float64}
 end
 
 function genoptimizestate(problem::DynProgProblem, value_fun_state)
@@ -27,7 +29,9 @@ function genoptimizestate(problem::DynProgProblem, value_fun_state)
         value_fun_state,
         Array{Float64}(undef, length(value_fun_state.n_nodes)),
         Array{ForwardDiff.Dual{Nothing,Float64,nchoice}}(undef, length(value_fun_state.n_nodes)),
-        problem.ex_params)
+        problem.ex_params,
+        problem.uncertain_weights,
+        problem.uncertain_nodes)
     return os
 end
 
@@ -42,11 +46,14 @@ end
 function objective_f(x::Array{T,1}, state::OptimizeState) where {T <: Number}
     k_new = getrighttemparray(T, state)
 
-    state.f_transition(state.s_curr_state, k_new, x, state.ex_params)
-
     payoff = state.f_payoff(state.s_curr_state, x, state.ex_params)
 
-    v = valuefun(k_new, state.c, state.value_fun_state)
+    v = zero(T)    
+
+    for i=1:length(state.uncertain_weights)
+        state.f_transition(state.s_curr_state, k_new, x, view(state.uncertain_nodes, i, :), state.ex_params)
+        v += state.uncertain_weights[i] * valuefun(k_new, state.c, state.value_fun_state)
+    end
 
     return payoff + state.f_discountfactor(state.s_curr_state, state.ex_params) * v
 end

@@ -32,6 +32,9 @@ mutable struct DynProgProblem{T}
     g_max::Array{Float64,1}
     g_linear::Array{Bool,1}
 
+    uncertain_weights::Vector{Float64}
+    uncertain_nodes::Matrix{Float64}
+
     ex_params::T
 end
 
