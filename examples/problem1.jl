@@ -1,39 +1,41 @@
 function getproblem1(regions=2)
     # Set the economic parameters
 
-    η = 2.        # Consumption smoothing parameter
-    ρ = 0.015     # Annual rate of pure time preference
-    κ = 0.3       # Capital share
-    δ = 0.1       # Capital depreciation rate
-    g = 0.0       # Rate of technological progress
-    L = 7.        # Global labor force in billions of people
+    ex_params = (
+        η = 2.,        # Consumption smoothing parameter
+        ρ = 0.015,     # Annual rate of pure time preference
+        κ = 0.3,       # Capital share
+        δ = 0.1,       # Capital depreciation rate
+        g = 0.0,       # Rate of technological progress
+        L = 7.,        # Global labor force in billions of people
 
-    K_0 = 80.       # Initial capital stock
-    A_0 = 1.        # Initial level of technology
-    k_0 = K_0/A_0   # Initial level of effective capital
+        K_0 = 80.,       # Initial capital stock
+        A_0 = 1.,        # Initial level of technology
+        k_0 = 80. / 1.   # Initial level of effective capital
+    )
 
-    Y(k) = (k^κ)*L^(1-κ)
+    Y(k, p) = (k^p.κ)*p.L^(1-p.κ)
 
-    function transition(k,k_new, x)
+    function transition(k, k_new, x, up, p)
         for i=1:length(k)
-            k_new[i] = (1-δ)*k[i] + x[i] * Y(k[i])
+            k_new[i] = (1-p.δ)*k[i] + x[i] * Y(k[i], p)
         end
     end
 
-    function payoff(s, x)
+    function payoff(s, x, p)
         ret = zero(eltype(x))
         for i=1:length(x)
-            consumption = (1-x[i]) * Y(s[i])
-            ret += (consumption^(1-η))/(1-η)
+            consumption = (1-x[i]) * Y(s[i], p)
+            ret += (consumption^(1-p.η))/(1-p.η)
         end
         return ret
     end
 
-    function discountfactor(state)
-        return exp(-ρ)
+    function discountfactor(state, p)
+        return exp(-p.ρ)
     end
 
-    function constraints(state, x, g)
+    function constraints(state, x, g, p)
         return
     end
 
@@ -43,9 +45,11 @@ function getproblem1(regions=2)
     x_min = ones(regions) .* 0.0
     x_max = ones(regions) .* 1.0
     x_init = ones(regions) .* 0.5
-    g_min = Array(Float64, 0)
-    g_max = Array(Float64, 0)
-    g_linear = Array(Bool, 0)
+    g_min = Float64[]
+    g_max = Float64[]
+    g_linear = Bool[]
+    g_uncertain_weights = Float64[]
+    g_uncertain_nodes = Matrix{Float64}(undef,0,0)
 
 	problem = DynProgProblem(
 		transition,
@@ -60,7 +64,11 @@ function getproblem1(regions=2)
         x_init,
         g_min,
         g_max,
-        g_linear)
+        g_linear,
+        g_uncertain_weights,
+        g_uncertain_nodes,
+        ex_params
+        )
 
 	return problem
 end

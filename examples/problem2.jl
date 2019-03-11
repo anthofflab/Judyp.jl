@@ -11,12 +11,12 @@ function getproblem2(regions=2)
         L = 7.,        # Global labor force in billions of people
         K_0 = 80.,       # Initial capital stock
         A_0 = 1.,        # Initial level of technology
-        k_0 = 80./1.   # Initial level of effective capital K_0/A_0
+        k_0 = 80. / 1.   # Initial level of effective capital K_0/A_0
     )
 
     Y(k, p) = (k^p.κ)*p.L^(1-p.κ)
 
-    function transition(k,k_new, x, p)
+    function transition(k,k_new, x, up, p)
         choices = reshape(x,(2,p.regions))
 
         for i=1:length(k)
@@ -56,6 +56,8 @@ function getproblem2(regions=2)
     g_min = ones(regions) .* 0.0
     g_max = ones(regions) .* Inf
     g_linear = repeat([false], inner=[regions])
+    g_uncertain_weights = Float64[]
+    g_uncertain_nodes = Matrix{Float64}(undef,0,0)
 
 	problem = DynProgProblem(
 		transition,
@@ -71,6 +73,8 @@ function getproblem2(regions=2)
         g_min,
         g_max,
         g_linear,
+        g_uncertain_weights,
+        g_uncertain_nodes,
         ex_params)
 
 	return problem

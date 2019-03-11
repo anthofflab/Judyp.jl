@@ -14,7 +14,7 @@ function getproblem3()
         k_0 = 80 ./ 1.   # Initial level of effective capital K_0/A_0
     )
 
-    function transition(k,k_new, x, p)
+    function transition(k,k_new, x, up, p)
         choices = reshape(x,(2,p.regions))
 
         for i=1:length(k)
@@ -56,6 +56,8 @@ function getproblem3()
     g_min = ones(ex_params.regions) .* 0.0
     g_max = ones(ex_params.regions) .* Inf
     g_linear = repeat([false], inner=[ex_params.regions])
+    g_uncertain_weights = Float64[]
+    g_uncertain_nodes = Matrix{Float64}(undef,0,0)
 
 	problem = DynProgProblem(
 		transition,
@@ -71,6 +73,8 @@ function getproblem3()
         g_min,
         g_max,
         g_linear,
+        g_uncertain_weights,
+        g_uncertain_nodes,
         ex_params)
 
 	return problem
