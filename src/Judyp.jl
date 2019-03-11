@@ -38,6 +38,23 @@ mutable struct DynProgProblem{T}
     ex_params::T
 end
 
+function Base.show(io::IO, p::DynProgProblem)
+    println(io, "Dynamic programming problem with")
+    println(io, "  $(length(p.num_node)) state variables")
+    for i=1:length(p.num_node)
+        println(io, "    State $i: $(p.num_node[i]) nodes over [$(p.s_min[i]), $(p.s_max[i])]")
+    end
+    println(io, "  $(length(p.x_min)) choice variables")
+    for i=1:length(p.x_min)
+        println(io, "    Choice $i: bounds [$(p.x_min[i]), $(p.x_max[i])] with initial value $(p.x_init[i])")
+    end
+    println(io, "  $(length(p.g_min)) constraints")
+    for i=1:length(p.g_min)
+        println(io, "    Constraint $i: bounds [$(p.g_min[i]), $(p.g_max[i])] $(p.g_linear ? "linear" : "")")
+    end
+    println(io, "  $(size(p.uncertain_nodes,2)) uncertain parameters")
+end
+
 mutable struct DynProgState{T}
     problem::DynProgProblem{T}
 
@@ -133,6 +150,10 @@ mutable struct DynProgSolution
     elapsed_solver
     it
     diagnostics::JudypDiagnostics
+end
+
+function Base.show(io::IO, s::DynProgSolution)
+    print(io, "Dynamic programming solution")
 end
 
 include("fchebtensor.jl")
