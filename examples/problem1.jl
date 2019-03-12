@@ -16,13 +16,15 @@ function getproblem1(regions=2)
 
     Y(k, p) = (k^p.κ)*p.L^(1-p.κ)
 
-    function transition(k, k_new, x, up, p)
+    problem = DynProgProblem()
+
+    set_transition_function!(problem) do k, k_new, x, up, p
         for i=1:length(k)
             k_new[i] = (1-p.δ)*k[i] + x[i] * Y(k[i], p)
         end
     end
 
-    function payoff(s, x, p)
+    set_payoff_function!(problem) do s, x, p
         ret = zero(eltype(x))
         for i=1:length(x)
             consumption = (1-x[i]) * Y(s[i], p)
@@ -31,44 +33,16 @@ function getproblem1(regions=2)
         return ret
     end
 
-    function discountfactor(state, p)
+    set_discountfactor_function!(problem) do state, p
         return exp(-p.ρ)
     end
 
-    function constraints(state, x, g, p)
-        return
+    set_exogenous_parameters!(problem, ex_params)
+
+    for i=1:length(regions)
+        add_state_variable!(problem, 1., 100., 10)
+        add_choice_variable!(problem, 0., 1.)
     end
-
-    num_node = ones(Int, regions) .* 10
-    s_min = ones(regions) .* 1.0
-    s_max = ones(regions) .* 100.0
-    x_min = ones(regions) .* 0.0
-    x_max = ones(regions) .* 1.0
-    x_init = ones(regions) .* 0.5
-    g_min = Float64[]
-    g_max = Float64[]
-    g_linear = Bool[]
-    g_uncertain_weights = Float64[]
-    g_uncertain_nodes = Matrix{Float64}(undef,0,0)
-
-	problem = DynProgProblem(
-		transition,
-		payoff,
-        constraints,
-        discountfactor,
-		num_node,
-		s_min,
-		s_max,
-		x_min,
-		x_max,
-        x_init,
-        g_min,
-        g_max,
-        g_linear,
-        g_uncertain_weights,
-        g_uncertain_nodes,
-        ex_params
-        )
 
 	return problem
 end

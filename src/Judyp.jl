@@ -1,8 +1,11 @@
 module Judyp
 
-using Distributed, LinearAlgebra
+using Distributed, LinearAlgebra, Statistics
 
-export DynProgProblem
+export DynProgProblem, set_transition_function!, set_payoff_function!,
+    set_constraints_function!, set_discountfactor_function!, add_state_variable!,
+    add_choice_variable!, add_constraint!, set_uncertain_weights!,
+    add_uncertain_parameter!, set_exogenous_parameters!
 
 export solve, psolve
 
@@ -13,50 +16,12 @@ using ParallelDataTransfer
 using NLopt
 using Ipopt
 
-mutable struct DynProgProblem{T}
-    transition_function::Function
-    payoff_function::Function
-    constraint_function::Function
-    discountfactor_function::Function
+include("dynprogproblem.jl")
 
-    num_node::Array{Int,1}
 
-    s_min::Array{Float64,1}
-    s_max::Array{Float64,1}
-
-    x_min::Array{Float64,1}
-    x_max::Array{Float64,1}
-    x_init::Array{Float64,1}
-
-    g_min::Array{Float64,1}
-    g_max::Array{Float64,1}
-    g_linear::Array{Bool,1}
-
-    uncertain_weights::Vector{Float64}
-    uncertain_nodes::Matrix{Float64}
-
-    ex_params::T
-end
-
-function Base.show(io::IO, p::DynProgProblem)
-    println(io, "Dynamic programming problem with")
-    println(io, "  $(length(p.num_node)) state variables")
-    for i=1:length(p.num_node)
-        println(io, "    State $i: $(p.num_node[i]) nodes over [$(p.s_min[i]), $(p.s_max[i])]")
-    end
-    println(io, "  $(length(p.x_min)) choice variables")
-    for i=1:length(p.x_min)
-        println(io, "    Choice $i: bounds [$(p.x_min[i]), $(p.x_max[i])] with initial value $(p.x_init[i])")
-    end
-    println(io, "  $(length(p.g_min)) constraints")
-    for i=1:length(p.g_min)
-        println(io, "    Constraint $i: bounds [$(p.g_min[i]), $(p.g_max[i])] $(p.g_linear ? "linear" : "")")
-    end
-    println(io, "  $(size(p.uncertain_nodes,2)) uncertain parameters")
-end
 
 mutable struct DynProgState{T}
-    problem::DynProgProblem{T}
+    problem::DynProgProblem
 
     clen::Int
     c::Vector{Float64}
@@ -75,7 +40,7 @@ mutable struct DynProgState{T}
 
     mathprog_problems
 
-    function DynProgState(problem::DynProgProblem{T}, solver_constructors) where {T}
+    function DynProgState(problem::DynProgProblem, solver_constructors)
         clen = prod(problem.num_node)
         c = zeros(clen)
         c_old = zeros(clen)
@@ -119,7 +84,7 @@ mutable struct DynProgState{T}
                 evaluator)
         end        
 
-        return new{T}(
+        return new{typeof(problem.ex_params)}(
             problem,
             clen,
             c,
