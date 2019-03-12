@@ -85,6 +85,13 @@ function set_discountfactor_function!(p::DynProgProblem, f::Function)
 end
 set_discountfactor_function!(f::Function, p::DynProgProblem) = set_discountfactor_function!(p, f)
 
+function set_discountfactor!(p::DynProgProblem, discountfactor::Float64)
+    set_discountfactor_function!(p) do state, p
+        return discountfactor
+    end
+    nothing
+end
+
 function add_state_variable!(p::DynProgProblem, s_min::Float64, s_max::Float64, nodes::Int)
     push!(p.s_min, s_min)
     push!(p.s_max, s_max)

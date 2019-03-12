@@ -5,7 +5,7 @@ using Distributed, LinearAlgebra, Statistics
 export DynProgProblem, set_transition_function!, set_payoff_function!,
     set_constraints_function!, set_discountfactor_function!, add_state_variable!,
     add_choice_variable!, add_constraint!, set_uncertain_weights!,
-    add_uncertain_parameter!, set_exogenous_parameters!
+    add_uncertain_parameter!, set_exogenous_parameters!, set_discountfactor!
 
 export solve, psolve
 

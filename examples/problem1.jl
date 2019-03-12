@@ -33,10 +33,8 @@ function getproblem1(regions=2)
         return ret
     end
 
-    set_discountfactor_function!(problem) do state, p
-        return exp(-p.ρ)
-    end
-
+    set_discountfactor!(problem, 0.985)
+    
     set_exogenous_parameters!(problem, ex_params)
 
     for i=1:length(regions)
