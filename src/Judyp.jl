@@ -17,7 +17,7 @@ using NLopt
 using Ipopt
 
 include("dynprogproblem.jl")
-
+include("ntarraywrapper.jl")
 
 
 mutable struct DynProgState{T}
