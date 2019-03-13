@@ -37,8 +37,8 @@ function getproblem1(regions=2)
     
     set_exogenous_parameters!(problem, ex_params)
 
-    for i=1:length(regions)
-        add_state_variable!(problem, 1., 100., 10)
+    for i=1:regions
+        add_state_variable!(problem, 10., 1., 100., 10)
         add_choice_variable!(problem, 0., 1.)
     end
 

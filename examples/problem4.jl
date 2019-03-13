@@ -13,16 +13,17 @@ function getproblem4()
         rho = 0.78
     )
     
+    problem = DynProgProblem()
        
-    function transition(k,k_new, x, unc_p, p)
+    set_transition_function!(problem) do s, s_new, x, up, p
         choices = x
 
-        k_new[1] = (1-p.δ)*k[1] + choices[2]
+        s_new[1] = (1-p.δ)*s[1] + choices[2]
 
-        k_new[2] = k[2]^p.rho * exp(unc_p[1])
+        s_new[2] = s[2]^p.rho * exp(up[1])
     end
 
-    function payoff(s, x, p)
+    set_payoff_function!(problem) do s, x, p
         choices = x
 
         ret = zero(eltype(x))
@@ -33,49 +34,28 @@ function getproblem4()
         return ret
     end
 
-    function discountfactor(state, p)
-        return p.beta
-    end
+    set_discountfactor!(problem, ex_params.beta)
 
-    function constraints(state, x, g, p)
+    set_constraints_function!(problem) do s, x, g, p
         choices = x
 
-        k = state[1]
-        Y = state[2] * p.A_0 * (k^p.κ) * choices[3]^(1-p.κ)
+        k = s[1]
+        Y = s[2] * p.A_0 * (k^p.κ) * choices[3]^(1-p.κ)
         g[1] = Y - choices[1] - choices[2]
-
     end
 
-    num_node = [10, 10]
-    s_min = [0.7, 0.887]
-    s_max = [1.3, 1.128]
-    x_min = ones(3) * 0.0
-    x_max = ones(3) * 100000000000.
-    x_init = ones(3) .* 0.1
-    g_min = [0.0]
-    g_max = [Inf]
-    g_linear = repeat([false], inner=[1])
+    add_state_variable!(problem, 1., 0.7,1.3, 10)
+    add_state_variable!(problem, 1., 0.887,1.128, 10)
 
-    uncertain_weights = [0.2, 0.4, 0.2]
-    uncertain_nodes = reshape([1.,1.,1.], 3, :)
+    add_choice_variable!(problem, 0., 100000000000., 0.1)
+    add_choice_variable!(problem, 0., 100000000000., 0.1)
+    add_choice_variable!(problem, 0., 100000000000., 0.1)
 
-	problem = DynProgProblem(
-		transition,
-		payoff,
-        constraints,
-        discountfactor,
-		num_node,
-		s_min,
-		s_max,
-		x_min,
-		x_max,
-        x_init,
-        g_min,
-        g_max,
-        g_linear,
-        uncertain_weights,
-        uncertain_nodes,
-        ex_params)
+    add_constraint!(problem, 0., Inf, false)
+
+    set_uncertain_weights!(problem, [0.2, 0.4, 0.2])
+
+    add_uncertain_parameter!(problem, [1.,1.,1.])
 
 	return problem
 end
