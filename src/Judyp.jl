@@ -7,7 +7,7 @@ export DynProgProblem, set_transition_function!, set_payoff_function!,
     add_choice_variable!, add_constraint!, set_uncertain_weights!,
     add_uncertain_parameter!, set_exogenous_parameters!, set_discountfactor!
 
-export solve, psolve
+export solve, psolve, simulate
 
 using MathProgBase
 using CompEcon
@@ -112,9 +112,11 @@ end
 mutable struct DynProgSolution
     c
     valuefun
+    policyfun
     elapsed_solver
     it
     diagnostics::JudypDiagnostics
+    problem::DynProgProblem
 end
 
 function Base.show(io::IO, s::DynProgSolution)
@@ -270,8 +272,27 @@ function psolve(problem::DynProgProblem;
             dpstate = DynProgState(problem, solver_constructors)
             dpstate.opt_state.c = c
             dpstate.c = c
-        
-            return DynProgSolution(dpstate.c, q->valuefun(q, dpstate.opt_state.c, dpstate.opt_state.value_fun_state), elapsed_solver, it, JudypDiagnostics())
+
+            p_func = s -> begin
+                dpstate.opt_state.s_curr_state[:] .= s            
+            
+                for mp in dpstate.mathprog_problems
+                    setwarmstart!(mp,problem.x_init)
+                    optimize!(mp)
+
+                    stat = status(mp)
+            
+                    if stat==:Optimal || stat==:FeasibleApproximate
+                        solution_found = true
+            
+                         return getsolution(mp)
+                    end
+                end
+            
+                error("Couldn't solve")
+            end
+       
+            return DynProgSolution(dpstate.c, q->valuefun(q, dpstate.opt_state.c, dpstate.opt_state.value_fun_state), p_func, elapsed_solver, it, JudypDiagnostics(), problem)
         end
 
         if print_level>=2
@@ -327,7 +348,27 @@ function solve(problem::DynProgProblem;
             if print_level>=1
                 println("Function iteration converged after $it iterations with max. coefficient difference of $step1")
             end
-            return DynProgSolution(dpstate.c, q->valuefun(q, dpstate.opt_state.c, dpstate.opt_state.value_fun_state), elapsed_solver, it, diag)
+
+            p_func = s -> begin
+                dpstate.opt_state.s_curr_state[:] .= s            
+            
+                for mp in dpstate.mathprog_problems
+                    setwarmstart!(mp,problem.x_init)
+                    optimize!(mp)
+
+                    stat = status(mp)
+            
+                    if stat==:Optimal || stat==:FeasibleApproximate
+                        solution_found = true
+            
+                         return getsolution(mp)
+                    end
+                end
+            
+                error("Couldn't solve")
+            end
+
+            return DynProgSolution(dpstate.c, q->valuefun(q, dpstate.opt_state.c, dpstate.opt_state.value_fun_state), p_func, elapsed_solver, it, diag, problem)
         end
 
         if print_level>=2
@@ -337,5 +378,7 @@ function solve(problem::DynProgProblem;
     end
     error("Function iteration with reached the maximum number of iterations")
 end
+
+include("sim.jl")
 
 end # module

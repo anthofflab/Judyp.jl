@@ -16,15 +16,17 @@ function getproblem2(regions=2)
 
     Y(k, p) = (k^p.κ)*p.L^(1-p.κ)
 
-    function transition(k,k_new, x, up, p)
+    problem = DynProgProblem()
+
+    set_transition_function!(problem) do s, s_new, x, up, p
         choices = reshape(x,(2,p.regions))
 
-        for i=1:length(k)
-            k_new[i] = (1-p.δ)*k[i] + choices[2,i]
+        for i=1:length(s)
+            s_new[i] = (1-p.δ)*s[i] + choices[2,i]
         end
     end
 
-    function payoff(s, x, p)
+    set_payoff_function!(problem) do s, x, p
         choices = reshape(x,(2,p.regions))
 
         ret = zero(eltype(x))
@@ -35,47 +37,23 @@ function getproblem2(regions=2)
         return ret
     end
 
-    function discountfactor(state, p)
-        return exp(-p.ρ)
-    end
+    set_discountfactor!(problem, 1-ex_params.ρ)
 
-    function constraints(state, x, g, p)
+    set_constraints_function!(problem) do s, x, g, p
         choices = reshape(x,(2,p.regions))
 
         for i=1:p.regions
-            g[i] = Y(state[i], p) - choices[1,i] - choices[2,i]
+            g[i] = Y(s[i], p) - choices[1,i] - choices[2,i]
         end
     end
 
-    num_node = ones(Int, regions) .* 10
-    s_min = ones(regions) .* 1.0
-    s_max = ones(regions) .* 100.0
-    x_min = ones(regions*2) .* 0.0
-    x_max = ones(regions*2) .* 100000000000.
-    x_init = ones(regions*2) .* 0.1
-    g_min = ones(regions) .* 0.0
-    g_max = ones(regions) .* Inf
-    g_linear = repeat([false], inner=[regions])
-    g_uncertain_weights = Float64[]
-    g_uncertain_nodes = Matrix{Float64}(undef,0,0)
+    set_exogenous_parameters!(problem, ex_params)
 
-	problem = DynProgProblem(
-		transition,
-		payoff,
-        constraints,
-        discountfactor,
-		num_node,
-		s_min,
-		s_max,
-		x_min,
-		x_max,
-        x_init,
-        g_min,
-        g_max,
-        g_linear,
-        g_uncertain_weights,
-        g_uncertain_nodes,
-        ex_params)
+    for i=1:regions
+        add_state_variable!(problem, 10., 1., 100., 10)
+        add_choice_variable!(problem, 0., 100000000000., 0.1)
+        add_constraint!(problem, 0., Inf, false)
+    end
 
 	return problem
 end
