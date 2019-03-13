@@ -37,7 +37,7 @@ function getproblem2(regions=2)
         return ret
     end
 
-    set_discountfactor!(problem, 1-ex_params.ρ)
+    set_discountfactor!(problem, exp(-ex_params.ρ))
 
     set_constraints_function!(problem) do s, x, g, p
         choices = reshape(x,(2,p.regions))
@@ -51,6 +51,7 @@ function getproblem2(regions=2)
 
     for i=1:regions
         add_state_variable!(problem, 10., 1., 100., 10)
+        add_choice_variable!(problem, 0., 100000000000., 0.1)
         add_choice_variable!(problem, 0., 100000000000., 0.1)
         add_constraint!(problem, 0., Inf, false)
     end
