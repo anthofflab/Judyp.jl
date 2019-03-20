@@ -6,3 +6,5 @@ CompEcon
 ParallelDataTransfer
 NLopt
 Ipopt
+Distributions
+QueryTables
