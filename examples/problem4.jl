@@ -1,3 +1,5 @@
+using Distributions
+
 function getproblem4()    
     # Set the economic parameters
 
@@ -47,19 +49,19 @@ function getproblem4()
 
     set_exogenous_parameters!(problem, ex_params)
     
-    add_state_variable!(problem, 1., 0.7,1.3, 10)
-    add_state_variable!(problem, 1., 0.8853, 1.1295, 10)
+    add_state_variable!(problem, :k, 1., 0.7,1.3, 10)
+    add_state_variable!(problem, :A, 1., 0.8853, 1.1295, 10)
 
-    add_choice_variable!(problem, 0., 100000000000., 0.1)
-    add_choice_variable!(problem, 0., 100000000000., 0.1)
-    add_choice_variable!(problem, 0., 100000000000., 0.1)
+    add_choice_variable!(problem, :C, 0., 100000000000., 0.1)
+    add_choice_variable!(problem, :I, 0., 100000000000., 0.1)
+    add_choice_variable!(problem, :z, 0., 100000000000., 0.1)
 
     add_constraint!(problem, 0., Inf, false)
 
     ## adds Gauss-Hermite weights and nodes for N = 8
     set_uncertain_weights!(problem, [1.99604072e-04, 1.70779830e-02, 2.07802326e-01, 6.61147013e-01,6.61147013e-01, 2.07802326e-01, 1.70779830e-02, 1.99604072e-04] ./ sqrt(pi))
 
-    add_uncertain_parameter!(problem, [-2.93063742, -1.98165676, -1.15719371, -0.38118699,  0.38118699, 1.15719371,  1.98165676,  2.93063742] .* sqrt(2) .* ex_params.σ)
+    add_uncertain_parameter!(problem, Normal(0., ex_params.σ), [-2.93063742, -1.98165676, -1.15719371, -0.38118699,  0.38118699, 1.15719371,  1.98165676,  2.93063742] .* sqrt(2) .* ex_params.σ)
     
 
 	return problem

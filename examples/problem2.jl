@@ -50,9 +50,9 @@ function getproblem2(regions=2)
     set_exogenous_parameters!(problem, ex_params)
 
     for i=1:regions
-        add_state_variable!(problem, 10., 1., 100., 10)
-        add_choice_variable!(problem, 0., 100000000000., 0.1)
-        add_choice_variable!(problem, 0., 100000000000., 0.1)
+        add_state_variable!(problem, Symbol("Capital_"*string(i)), 10., 1., 100., 10)
+        add_choice_variable!(problem, Symbol("Consumption_"*string(i)), 0., 100000000000., 0.1)
+        add_choice_variable!(problem, Symbol("Investment_"*string(i)), 0., 100000000000., 0.1)
         add_constraint!(problem, 0., Inf, false)
     end
 

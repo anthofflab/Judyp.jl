@@ -9,10 +9,12 @@ mutable struct DynProgProblem
     s0::Vector{Float64}
     s_min::Array{Float64,1}
     s_max::Array{Float64,1}
+    s_name::Vector{Symbol}
 
     x_min::Array{Float64,1}
     x_max::Array{Float64,1}
     x_init::Array{Float64,1}
+    x_name::Vector{Symbol}
 
     g_min::Array{Float64,1}
     g_max::Array{Float64,1}
@@ -20,6 +22,7 @@ mutable struct DynProgProblem
 
     uncertain_weights::Vector{Float64}
     uncertain_nodes::Matrix{Float64}
+    uncertain_distributions::Vector{Distribution}
 
     ex_params::Union{NamedTuple,Nothing}
 
@@ -33,14 +36,17 @@ mutable struct DynProgProblem
             Vector{Float64}(undef,0),
             Vector{Float64}(undef,0),
             Vector{Float64}(undef,0),
+            Vector{Symbol}(undef, 0),
             Vector{Float64}(undef,0),
             Vector{Float64}(undef,0),
             Vector{Float64}(undef,0),
+            Vector{Symbol}(undef, 0),
             Vector{Float64}(undef,0),
             Vector{Float64}(undef,0),
             Vector{Bool}(undef,0),
             Vector{Float64}(undef,0),
             Matrix{Float64}(undef,0,0),
+            Vector{Distribution}(undef, 0),
             nothing
         )
     end
@@ -94,18 +100,20 @@ function set_discountfactor!(p::DynProgProblem, discountfactor::Float64)
     nothing
 end
 
-function add_state_variable!(p::DynProgProblem, s0::Float64, s_min::Float64, s_max::Float64, nodes::Int)
+function add_state_variable!(p::DynProgProblem, name::Symbol, s0::Float64, s_min::Float64, s_max::Float64, nodes::Int)
     push!(p.s0, s0)
     push!(p.s_min, s_min)
     push!(p.s_max, s_max)
     push!(p.num_node, nodes)    
+    push!(p.s_name, name)
     nothing
 end
 
-function add_choice_variable!(p::DynProgProblem, x_min::Float64, x_max::Float64, x_init::Float64=mean([x_min, x_max]))
+function add_choice_variable!(p::DynProgProblem, name::Symbol, x_min::Float64, x_max::Float64, x_init::Float64=mean([x_min, x_max]))
     push!(p.x_min, x_min)
     push!(p.x_max, x_max)
     push!(p.x_init, x_init)
+    push!(p.x_name, name)
     nothing
 end
 
@@ -120,15 +128,14 @@ function set_uncertain_weights!(p::DynProgProblem, uncertain_weights::Vector{Flo
     p.uncertain_weights = uncertain_weights
 end
 
-function add_uncertain_parameter!(p::DynProgProblem, uncertain_nodes::Vector{Float64})
+function add_uncertain_parameter!(p::DynProgProblem, dist::Distribution, uncertain_nodes::Vector{Float64})
     length(p.uncertain_weights) == 0 && error("You first need to set the uncertain weights with `set_uncertain_weights!`.")
     length(p.uncertain_weights) != length(uncertain_nodes) && error("You need to provide the same number of nodes as weights.")
+    size(p.uncertain_nodes,1) > 0 && error("Currently only one uncertain parameter is supported.")
 
-    @show p.uncertain_nodes
-    @show uncertain_nodes
-    @show size(p.uncertain_nodes,1)
 
     p.uncertain_nodes = size(p.uncertain_nodes,1) > 0 ? hcat(p.uncertain_nodes, reshape(uncertain_nodes, length(uncertain_nodes), 1)) : reshape(uncertain_nodes, length(uncertain_nodes), 1)
+    push!(p.uncertain_distributions, dist)
     nothing
 end
 
