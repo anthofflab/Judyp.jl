@@ -193,10 +193,14 @@ function mypassobj(target::AbstractVector{Int}, nm::Symbol, value; to_mod=Main)
 end
 
 function psolve(problem::DynProgProblem;
-        solver_constructors,#[()->IpoptSolver(hessian_approximation="limited-memory", print_level=0)],
+        solver_constructors=nothing,#[()->IpoptSolver(hessian_approximation="limited-memory", print_level=0)],
         print_level=1,
         maxit=10000,
         tol=1e-3)
+
+    if solver_constructors===nothing
+        solver_constructors = [() -> NLoptSolver(algorithm=:LD_SLSQP, maxtime=2), () -> IpoptSolver(hessian_approximation="limited-memory", max_iter=10000, print_level=0, bound_relax_factor=0.)]
+    end
 
     @eval @everywhere using Judyp
 
