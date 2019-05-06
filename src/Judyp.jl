@@ -362,12 +362,16 @@ function solve(problem::DynProgProblem;
                     setwarmstart!(mp,problem.x_init)
                     optimize!(mp)
 
-                    stat = status(mp)
+                    stat = try
+                        status(mp)
+                    catch err
+                        :FAILURE
+                    end
             
                     if stat==:Optimal || stat==:FeasibleApproximate
                         solution_found = true
             
-                         return getsolution(mp)
+                        return getsolution(mp)
                     end
                 end
             
