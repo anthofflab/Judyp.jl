@@ -33,7 +33,7 @@ function getproblem1(regions=2)
         return ret
     end
 
-    set_discountfactor!(problem, 0.985)
+    set_discountfactor!(problem, exp(-ex_params.ρ))
     
     set_exogenous_parameters!(problem, ex_params)
 
