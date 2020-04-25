@@ -310,7 +310,7 @@ function psolve(problem::DynProgProblem;
 end
 
 function solve(problem::DynProgProblem;
-    solver_constructors::Vector{Function}=[() -> NLoptSolver(algorithm=:LD_SLSQP, maxtime=2), () -> IpoptSolver(hessian_approximation="limited-memory", max_iter=10000, print_level=0, bound_relax_factor=0.)],
+    solver_constructors::Vector{Function}=[() -> NLoptSolver(algorithm=:LD_SLSQP, maxtime=2,ftol_rel=1e-12), () -> IpoptSolver(hessian_approximation="limited-memory", max_iter=10000, print_level=0, bound_relax_factor=0.)],
     print_level=1,
     maxit=10000,
     tol=1e-3)
@@ -355,11 +355,11 @@ function solve(problem::DynProgProblem;
                 println("Function iteration converged after $it iterations with max. coefficient difference of $step1")
             end
 
-            p_func = s -> begin
+            p_func = (s, init_guess) -> begin
                 dpstate.opt_state.s_curr_state[:] .= s            
             
                 for mp in dpstate.mathprog_problems
-                    setwarmstart!(mp,problem.x_init)
+                    setwarmstart!(mp,init_guess)
                     optimize!(mp)
 
                     stat = status(mp)

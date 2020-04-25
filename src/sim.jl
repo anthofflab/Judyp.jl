@@ -19,9 +19,12 @@ function simulate(sol::DynProgSolution, timeperiods, n)
 
         state_vars[:,1,run_id] .= sol.problem.s0
 
+        ### initialize curr_policy, to be used as initial guess
+        curr_policy = sol.problem.x_init
+        
         for t=1:timeperiods
             curr_state = view(state_vars, :, t, run_id)
-            curr_policy = sol.policyfun(curr_state)
+            curr_policy = sol.policyfun(curr_state, curr_policy)
 
             choice_vars[:,t,run_id] .= curr_policy
 
