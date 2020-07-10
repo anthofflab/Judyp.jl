@@ -18,6 +18,7 @@ using Ipopt
 using Distributions
 using DataTables
 
+include("utils.jl")
 include("dynprogproblem.jl")
 include("ntarraywrapper.jl")
 
@@ -144,8 +145,8 @@ function solve_node(dpstate::DynProgState, diag, i, curr_node, it)
         setwarmstart!(mp,dpstate.x_initial_value)
         elapsed = @elapsed optimize!(mp)
         # push!(elapsed_solver, elapsed)
-        stat = status(mp)
-
+        stat = our_status(mp)
+        
         if stat==:Optimal || stat==:FeasibleApproximate
             solution_found = true
 
@@ -286,7 +287,7 @@ function psolve(problem::DynProgProblem;
                     setwarmstart!(mp,problem.x_init)
                     optimize!(mp)
 
-                    stat = status(mp)
+                    stat = our_status(mp)
             
                     if stat==:Optimal || stat==:FeasibleApproximate
                         solution_found = true
@@ -362,11 +363,7 @@ function solve(problem::DynProgProblem;
                     setwarmstart!(mp,init_guess)
                     optimize!(mp)
 
-                    stat = try
-                        status(mp)
-                    catch err
-                        :FAILURE
-                    end
+                    stat = our_status(mp)
             
                     if stat==:Optimal || stat==:FeasibleApproximate
                         solution_found = true
