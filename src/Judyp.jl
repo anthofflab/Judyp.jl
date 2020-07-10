@@ -16,7 +16,7 @@ using ParallelDataTransfer
 using NLopt
 using Ipopt
 using Distributions
-using QueryTables
+using DataTables
 
 include("dynprogproblem.jl")
 include("ntarraywrapper.jl")
