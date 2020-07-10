@@ -1,8 +1,10 @@
 using Judyp
 include("problem1.jl")
 
-problem = getproblem1()
+for i = 1:4
+problem = getproblem1(i)
 
-@time res = solve(problem, print_level=2)
-
-simres = simulate(res, 50)
+@time res = solve(problem, print_level=0)
+end
+    
+# simres = simulate(res, 50, 0)
