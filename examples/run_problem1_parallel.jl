@@ -2,6 +2,9 @@ using Distributed
 
 addprocs()
 
+@everywhere using Pkg
+@everywhere Pkg.activate(@__DIR__)
+
 using Judyp
 @everywhere using NLopt
 @everywhere using Ipopt
