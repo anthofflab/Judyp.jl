@@ -4,6 +4,7 @@ authors = ["David Anthoff <anthoff@berkeley.edu>"]
 version = "0.1.0"
 
 [deps]
+ArrayInterface = "4fba245c-0d91-5ea0-9b3e-6abc04ee57a9"
 ForwardDiff = "f6369f11-7733-5829-9624-2563aa707210"
 MathProgBase = "fdba3010-5040-5b88-9595-932c9decdf73"
 ProgressMeter = "92933f4c-e287-5a05-a399-4b506db050ca"
@@ -22,6 +23,8 @@ Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 
 [compat]
 julia = "1"
+ArrayInterface = "3"
+Ipopt = "0.6"
 
 [targets]
 test = ["Test"]
