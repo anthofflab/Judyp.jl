@@ -24,6 +24,14 @@ Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 [compat]
 julia = "1.6"
 ArrayInterface = "3"
+ForwardDiff = "0.10"
+MathProgBase = "0.7"
+ProgressMeter = "1.7"
+CompEcon = "0.4"
+ParallelDataTransfer = "0.5"
+NLopt = "0.6"
+Distributions = "0.25"
+DataTables = "0.1"
 Ipopt = "0.6"
 
 [targets]
