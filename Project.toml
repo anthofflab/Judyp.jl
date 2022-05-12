@@ -1,7 +1,7 @@
 name = "Judyp"
 uuid = "03e8d3fe-358f-4065-ab07-c13f1e32eb0b"
 authors = ["David Anthoff <anthoff@berkeley.edu>"]
-version = "1.0.0"
+version = "1.0.1-DEV"
 
 [deps]
 Statistics = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
